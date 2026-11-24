@@ -10,6 +10,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgxpool"
 )
 
@@ -18,6 +19,10 @@ func NewPool(ctx context.Context, dbURL string) (*pgxpool.Pool, error) {
 	if err != nil {
 		return nil, fmt.Errorf("unable to parse database config: %w", err)
 	}
+
+	// Use simple protocol to support transaction poolers (PgBouncer/Supabase port 6543)
+	// and prevent "prepared statement already exists" (SQLSTATE 42P05) errors.
+	cfg.ConnConfig.DefaultQueryExecMode = pgx.QueryExecModeSimpleProtocol
 
 	cfg.MaxConns = 25
 	cfg.MinConns = 5

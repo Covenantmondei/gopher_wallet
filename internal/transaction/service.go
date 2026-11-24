@@ -186,9 +186,8 @@ func (s *Service) Transfer(
 	// 1. Check idempotency if key is present
 	var reqHash string
 	if idempotencyKey != "" {
-		h := sha256.New()
-		h.Write([]byte(fmt.Sprintf("%s:%s:%d:%s", senderUserID.String(), strings.ToLower(recipientEmail), amount, description)))
-		reqHash = hex.EncodeToString(h.Sum(nil))
+		sum := sha256.Sum256([]byte(fmt.Sprintf("%s:%s:%d:%s", senderUserID.String(), strings.ToLower(recipientEmail), amount, description)))
+		reqHash = hex.EncodeToString(sum[:])
 
 		existing, err := s.txRepo.GetIdempotencyRecord(ctx, senderUserID, idempotencyKey)
 		if err == nil {
