@@ -10,6 +10,7 @@ import (
 	"github.com/Covenantmondei/gopher_wallet/internal/middleware"
 	"github.com/Covenantmondei/gopher_wallet/internal/response"
 	"github.com/Covenantmondei/gopher_wallet/internal/server"
+	"github.com/Covenantmondei/gopher_wallet/internal/transaction"
 	"github.com/Covenantmondei/gopher_wallet/internal/user"
 	"github.com/Covenantmondei/gopher_wallet/internal/wallet"
 )
@@ -30,14 +31,20 @@ func main() {
 		log.Fatalf("database migration failed: %v", err)
 	}
 
-	// Initialize repositories and services
+	// Initialize repositories
 	userRepo := user.NewRepository(pool)
 	walletRepo := wallet.NewRepository(pool)
-	userService := user.NewService(pool, userRepo, walletRepo, cfg.JWTSecret, cfg.JWTExpirationHours)
-	userHandler := user.NewHandler(userService)
+	txRepo := transaction.NewRepository(pool)
 
+	// Initialize services
+	userService := user.NewService(pool, userRepo, walletRepo, cfg.JWTSecret, cfg.JWTExpirationHours)
 	walletService := wallet.NewService(walletRepo)
+	txService := transaction.NewService(pool, txRepo, walletRepo, userRepo)
+
+	// Initialize handlers
+	userHandler := user.NewHandler(userService)
 	walletHandler := wallet.NewHandler(walletService)
+	txHandler := transaction.NewHandler(txService)
 
 	mux := http.NewServeMux()
 
@@ -57,6 +64,13 @@ func main() {
 	mux.Handle("GET /api/v1/users/me", authMiddleware(http.HandlerFunc(userHandler.GetProfile)))
 	mux.Handle("GET /api/v1/wallet", authMiddleware(http.HandlerFunc(walletHandler.GetWallet)))
 	mux.Handle("GET /api/v1/wallet/balance", authMiddleware(http.HandlerFunc(walletHandler.GetBalance)))
+
+	// Transaction & Transfer routes
+	mux.Handle("POST /api/v1/transactions/credit", authMiddleware(http.HandlerFunc(txHandler.Credit)))
+	mux.Handle("POST /api/v1/transactions/debit", authMiddleware(http.HandlerFunc(txHandler.Debit)))
+	mux.Handle("POST /api/v1/transfers", authMiddleware(http.HandlerFunc(txHandler.Transfer)))
+	mux.Handle("GET /api/v1/transactions", authMiddleware(http.HandlerFunc(txHandler.List)))
+	mux.Handle("GET /api/v1/transactions/{id}", authMiddleware(http.HandlerFunc(txHandler.Get)))
 
 	// Wrap mux with global middleware chain
 	var handler http.Handler = mux
