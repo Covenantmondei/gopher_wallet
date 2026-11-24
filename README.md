@@ -1,4 +1,4 @@
-# GopherWallet 🦫💳
+# GopherWallet 
 
 A high-performance, secure **Wallet & Transaction Management API in Go**, built strictly using the Go standard library for the HTTP routing and server layer, raw SQL with `pgxpool` for PostgreSQL interactions, and robust database transaction isolation.
 
