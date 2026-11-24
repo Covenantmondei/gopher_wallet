@@ -51,18 +51,18 @@ func setupTestRig(t *testing.T) *testRig {
 	txHandler := transaction.NewHandler(txService)
 
 	mux := http.NewServeMux()
-	mux.HandleFunc("POST /api/v1/auth/register", userHandler.Register)
-	mux.HandleFunc("POST /api/v1/auth/login", userHandler.Login)
+	mux.HandleFunc("POST /api/auth/register", userHandler.Register)
+	mux.HandleFunc("POST /api/auth/login", userHandler.Login)
 
 	authMiddleware := middleware.Authenticate(cfg.JWTSecret)
-	mux.Handle("GET /api/v1/users/me", authMiddleware(http.HandlerFunc(userHandler.GetProfile)))
-	mux.Handle("GET /api/v1/wallet", authMiddleware(http.HandlerFunc(walletHandler.GetWallet)))
-	mux.Handle("GET /api/v1/wallet/balance", authMiddleware(http.HandlerFunc(walletHandler.GetBalance)))
-	mux.Handle("POST /api/v1/transactions/credit", authMiddleware(http.HandlerFunc(txHandler.Credit)))
-	mux.Handle("POST /api/v1/transactions/debit", authMiddleware(http.HandlerFunc(txHandler.Debit)))
-	mux.Handle("POST /api/v1/transfers", authMiddleware(http.HandlerFunc(txHandler.Transfer)))
-	mux.Handle("GET /api/v1/transactions", authMiddleware(http.HandlerFunc(txHandler.List)))
-	mux.Handle("GET /api/v1/transactions/{id}", authMiddleware(http.HandlerFunc(txHandler.Get)))
+	mux.Handle("GET /api/users/me", authMiddleware(http.HandlerFunc(userHandler.GetProfile)))
+	mux.Handle("GET /api/wallet", authMiddleware(http.HandlerFunc(walletHandler.GetWallet)))
+	mux.Handle("GET /api/wallet/balance", authMiddleware(http.HandlerFunc(walletHandler.GetBalance)))
+	mux.Handle("POST /api/transactions/credit", authMiddleware(http.HandlerFunc(txHandler.Credit)))
+	mux.Handle("POST /api/transactions/debit", authMiddleware(http.HandlerFunc(txHandler.Debit)))
+	mux.Handle("POST /api/transfers", authMiddleware(http.HandlerFunc(txHandler.Transfer)))
+	mux.Handle("GET /api/transactions", authMiddleware(http.HandlerFunc(txHandler.List)))
+	mux.Handle("GET /api/transactions/{id}", authMiddleware(http.HandlerFunc(txHandler.Get)))
 
 	return &testRig{
 		mux:        mux,
@@ -77,7 +77,7 @@ func registerAndLogin(t *testing.T, rig *testRig, email, password string) string
 		"password":  password,
 		"full_name": "Test Account",
 	})
-	regReq := httptest.NewRequest(http.MethodPost, "/api/v1/auth/register", bytes.NewReader(regPayload))
+	regReq := httptest.NewRequest(http.MethodPost, "/api/auth/register", bytes.NewReader(regPayload))
 	regRR := httptest.NewRecorder()
 	rig.mux.ServeHTTP(regRR, regReq)
 
@@ -89,7 +89,7 @@ func registerAndLogin(t *testing.T, rig *testRig, email, password string) string
 		"email":    email,
 		"password": password,
 	})
-	loginReq := httptest.NewRequest(http.MethodPost, "/api/v1/auth/login", bytes.NewReader(loginPayload))
+	loginReq := httptest.NewRequest(http.MethodPost, "/api/auth/login", bytes.NewReader(loginPayload))
 	loginRR := httptest.NewRecorder()
 	rig.mux.ServeHTTP(loginRR, loginReq)
 
@@ -119,7 +119,7 @@ func TestCreditDebitAndTransfers(t *testing.T) {
 		"amount":      1000000,
 		"description": "Initial funding",
 	})
-	creditReq := httptest.NewRequest(http.MethodPost, "/api/v1/transactions/credit", bytes.NewReader(creditPayload))
+	creditReq := httptest.NewRequest(http.MethodPost, "/api/transactions/credit", bytes.NewReader(creditPayload))
 	creditReq.Header.Set("Authorization", "Bearer "+tokenA)
 	creditRR := httptest.NewRecorder()
 	rig.mux.ServeHTTP(creditRR, creditReq)
@@ -135,7 +135,7 @@ func TestCreditDebitAndTransfers(t *testing.T) {
 		"amount":          400000,
 		"description":     "Dinner share",
 	})
-	transferReq := httptest.NewRequest(http.MethodPost, "/api/v1/transfers", bytes.NewReader(transferPayload))
+	transferReq := httptest.NewRequest(http.MethodPost, "/api/transfers", bytes.NewReader(transferPayload))
 	transferReq.Header.Set("Authorization", "Bearer "+tokenA)
 	transferReq.Header.Set("Idempotency-Key", transferKey)
 	transferRR := httptest.NewRecorder()
@@ -146,7 +146,7 @@ func TestCreditDebitAndTransfers(t *testing.T) {
 	}
 
 	// 3. Repeat EXACT SAME transfer with same key -> should return cached response (HIT)
-	transferReq2 := httptest.NewRequest(http.MethodPost, "/api/v1/transfers", bytes.NewReader(transferPayload))
+	transferReq2 := httptest.NewRequest(http.MethodPost, "/api/transfers", bytes.NewReader(transferPayload))
 	transferReq2.Header.Set("Authorization", "Bearer "+tokenA)
 	transferReq2.Header.Set("Idempotency-Key", transferKey)
 	transferRR2 := httptest.NewRecorder()
@@ -165,7 +165,7 @@ func TestCreditDebitAndTransfers(t *testing.T) {
 		"amount":          999999,
 		"description":     "Different amount",
 	})
-	conflictReq := httptest.NewRequest(http.MethodPost, "/api/v1/transfers", bytes.NewReader(conflictPayload))
+	conflictReq := httptest.NewRequest(http.MethodPost, "/api/transfers", bytes.NewReader(conflictPayload))
 	conflictReq.Header.Set("Authorization", "Bearer "+tokenA)
 	conflictReq.Header.Set("Idempotency-Key", transferKey)
 	conflictRR := httptest.NewRecorder()
@@ -176,7 +176,7 @@ func TestCreditDebitAndTransfers(t *testing.T) {
 	}
 
 	// 5. Verify User A balance is now ₦6,000 (600,000 kobo)
-	balReqA := httptest.NewRequest(http.MethodGet, "/api/v1/wallet/balance", nil)
+	balReqA := httptest.NewRequest(http.MethodGet, "/api/wallet/balance", nil)
 	balReqA.Header.Set("Authorization", "Bearer "+tokenA)
 	balRRA := httptest.NewRecorder()
 	rig.mux.ServeHTTP(balRRA, balReqA)
@@ -190,7 +190,7 @@ func TestCreditDebitAndTransfers(t *testing.T) {
 	}
 
 	// 6. Verify User B balance is now ₦4,000 (400,000 kobo)
-	balReqB := httptest.NewRequest(http.MethodGet, "/api/v1/wallet/balance", nil)
+	balReqB := httptest.NewRequest(http.MethodGet, "/api/wallet/balance", nil)
 	balReqB.Header.Set("Authorization", "Bearer "+tokenB)
 	balRRB := httptest.NewRecorder()
 	rig.mux.ServeHTTP(balRRB, balReqB)
@@ -204,7 +204,7 @@ func TestCreditDebitAndTransfers(t *testing.T) {
 	}
 
 	// 7. Verify transaction list on User A
-	listReq := httptest.NewRequest(http.MethodGet, "/api/v1/transactions", nil)
+	listReq := httptest.NewRequest(http.MethodGet, "/api/transactions", nil)
 	listReq.Header.Set("Authorization", "Bearer "+tokenA)
 	listRR := httptest.NewRecorder()
 	rig.mux.ServeHTTP(listRR, listReq)

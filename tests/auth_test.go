@@ -40,13 +40,13 @@ func TestAuthAndWalletEndpoints(t *testing.T) {
 	walletHandler := wallet.NewHandler(walletService)
 
 	mux := http.NewServeMux()
-	mux.HandleFunc("POST /api/v1/auth/register", userHandler.Register)
-	mux.HandleFunc("POST /api/v1/auth/login", userHandler.Login)
+	mux.HandleFunc("POST /api/auth/register", userHandler.Register)
+	mux.HandleFunc("POST /api/auth/login", userHandler.Login)
 
 	authMiddleware := middleware.Authenticate(cfg.JWTSecret)
-	mux.Handle("GET /api/v1/users/me", authMiddleware(http.HandlerFunc(userHandler.GetProfile)))
-	mux.Handle("GET /api/v1/wallet", authMiddleware(http.HandlerFunc(walletHandler.GetWallet)))
-	mux.Handle("GET /api/v1/wallet/balance", authMiddleware(http.HandlerFunc(walletHandler.GetBalance)))
+	mux.Handle("GET /api/users/me", authMiddleware(http.HandlerFunc(userHandler.GetProfile)))
+	mux.Handle("GET /api/wallet", authMiddleware(http.HandlerFunc(walletHandler.GetWallet)))
+	mux.Handle("GET /api/wallet/balance", authMiddleware(http.HandlerFunc(walletHandler.GetBalance)))
 
 	email := fmt.Sprintf("auth-test-%d@example.com", time.Now().UnixNano())
 	password := "correct-password-123"
@@ -57,7 +57,7 @@ func TestAuthAndWalletEndpoints(t *testing.T) {
 		"password":  password,
 		"full_name": "Auth Tester",
 	})
-	regReq := httptest.NewRequest(http.MethodPost, "/api/v1/auth/register", bytes.NewReader(regPayload))
+	regReq := httptest.NewRequest(http.MethodPost, "/api/auth/register", bytes.NewReader(regPayload))
 	regRR := httptest.NewRecorder()
 	mux.ServeHTTP(regRR, regReq)
 
@@ -70,7 +70,7 @@ func TestAuthAndWalletEndpoints(t *testing.T) {
 		"email":    email,
 		"password": "wrong-password",
 	})
-	badLoginReq := httptest.NewRequest(http.MethodPost, "/api/v1/auth/login", bytes.NewReader(badLoginPayload))
+	badLoginReq := httptest.NewRequest(http.MethodPost, "/api/auth/login", bytes.NewReader(badLoginPayload))
 	badLoginRR := httptest.NewRecorder()
 	mux.ServeHTTP(badLoginRR, badLoginReq)
 
@@ -83,7 +83,7 @@ func TestAuthAndWalletEndpoints(t *testing.T) {
 		"email":    email,
 		"password": password,
 	})
-	loginReq := httptest.NewRequest(http.MethodPost, "/api/v1/auth/login", bytes.NewReader(loginPayload))
+	loginReq := httptest.NewRequest(http.MethodPost, "/api/auth/login", bytes.NewReader(loginPayload))
 	loginRR := httptest.NewRecorder()
 	mux.ServeHTTP(loginRR, loginReq)
 
@@ -101,8 +101,8 @@ func TestAuthAndWalletEndpoints(t *testing.T) {
 		t.Fatal("expected token to be non-empty")
 	}
 
-	// 4. Access protected GET /api/v1/users/me without token -> 401 Unauthorized
-	unauthReq := httptest.NewRequest(http.MethodGet, "/api/v1/users/me", nil)
+	// 4. Access protected GET /api/users/me without token -> 401 Unauthorized
+	unauthReq := httptest.NewRequest(http.MethodGet, "/api/users/me", nil)
 	unauthRR := httptest.NewRecorder()
 	mux.ServeHTTP(unauthRR, unauthReq)
 
@@ -110,8 +110,8 @@ func TestAuthAndWalletEndpoints(t *testing.T) {
 		t.Errorf("expected 401 for unauthenticated profile request, got %d", unauthRR.Code)
 	}
 
-	// 5. Access protected GET /api/v1/users/me with valid token -> 200 OK
-	meReq := httptest.NewRequest(http.MethodGet, "/api/v1/users/me", nil)
+	// 5. Access protected GET /api/users/me with valid token -> 200 OK
+	meReq := httptest.NewRequest(http.MethodGet, "/api/users/me", nil)
 	meReq.Header.Set("Authorization", "Bearer "+loginRes.Token)
 	meRR := httptest.NewRecorder()
 	mux.ServeHTTP(meRR, meReq)
@@ -120,8 +120,8 @@ func TestAuthAndWalletEndpoints(t *testing.T) {
 		t.Fatalf("expected 200 for authenticated profile request, got %d: %s", meRR.Code, meRR.Body.String())
 	}
 
-	// 6. Access protected GET /api/v1/wallet
-	walletReq := httptest.NewRequest(http.MethodGet, "/api/v1/wallet", nil)
+	// 6. Access protected GET /api/wallet
+	walletReq := httptest.NewRequest(http.MethodGet, "/api/wallet", nil)
 	walletReq.Header.Set("Authorization", "Bearer "+loginRes.Token)
 	walletRR := httptest.NewRecorder()
 	mux.ServeHTTP(walletRR, walletReq)
@@ -130,8 +130,8 @@ func TestAuthAndWalletEndpoints(t *testing.T) {
 		t.Fatalf("expected 200 for wallet request, got %d: %s", walletRR.Code, walletRR.Body.String())
 	}
 
-	// 7. Access protected GET /api/v1/wallet/balance
-	balReq := httptest.NewRequest(http.MethodGet, "/api/v1/wallet/balance", nil)
+	// 7. Access protected GET /api/wallet/balance
+	balReq := httptest.NewRequest(http.MethodGet, "/api/wallet/balance", nil)
 	balReq.Header.Set("Authorization", "Bearer "+loginRes.Token)
 	balRR := httptest.NewRecorder()
 	mux.ServeHTTP(balRR, balReq)

@@ -1,0 +1,561 @@
+basePath: /
+definitions:
+  transaction.CreditDebitRequest:
+    properties:
+      amount:
+        description: in kobo (e.g. 100000 kobo = 1000.00 NGN)
+        example: 100000
+        type: integer
+      description:
+        example: Account funding
+        type: string
+    type: object
+  transaction.Status:
+    enum:
+    - PENDING
+    - SUCCESS
+    - FAILED
+    type: string
+    x-enum-varnames:
+    - StatusPending
+    - StatusSuccess
+    - StatusFailed
+  transaction.Transaction:
+    properties:
+      amount:
+        description: in kobo
+        type: integer
+      created_at:
+        type: string
+      description:
+        type: string
+      id:
+        type: string
+      reference:
+        type: string
+      status:
+        $ref: '#/definitions/transaction.Status'
+      type:
+        $ref: '#/definitions/transaction.Type'
+      wallet_id:
+        type: string
+    type: object
+  transaction.Transfer:
+    properties:
+      amount:
+        description: in kobo
+        type: integer
+      created_at:
+        type: string
+      credit_transaction_id:
+        type: string
+      debit_transaction_id:
+        type: string
+      id:
+        type: string
+      source_wallet_id:
+        type: string
+      target_wallet_id:
+        type: string
+    type: object
+  transaction.TransferOutput:
+    properties:
+      message:
+        type: string
+      sender_balance:
+        type: integer
+      sender_transaction:
+        $ref: '#/definitions/transaction.Transaction'
+      transfer:
+        $ref: '#/definitions/transaction.Transfer'
+    type: object
+  transaction.TransferRequest:
+    properties:
+      amount:
+        description: in kobo (e.g. 50000 kobo = 500.00 NGN)
+        example: 50000
+        type: integer
+      description:
+        example: Payment for freelance services
+        type: string
+      recipient_email:
+        example: recipient@example.com
+        type: string
+    type: object
+  transaction.Type:
+    enum:
+    - CREDIT
+    - DEBIT
+    type: string
+    x-enum-varnames:
+    - TypeCredit
+    - TypeDebit
+  user.LoginRequest:
+    properties:
+      email:
+        example: user@example.com
+        type: string
+      password:
+        example: secretPass123
+        type: string
+    type: object
+  user.RegisterRequest:
+    properties:
+      email:
+        example: user@example.com
+        type: string
+      full_name:
+        example: Ada Lovelace
+        type: string
+      password:
+        example: secretPass123
+        type: string
+    type: object
+host: localhost:8080
+info:
+  contact:
+    email: support@example.com
+    name: API Support
+  description: A high-performance, secure Wallet & Transaction Management API in Go
+    standard library.
+  license:
+    name: MIT
+  title: GopherWallet API
+  version: "1.0"
+paths:
+  /api/auth/login:
+    post:
+      consumes:
+      - application/json
+      description: Authenticates a user and returns a signed JWT token
+      parameters:
+      - description: Login credentials
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/user.LoginRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties: true
+            type: object
+        "400":
+          description: Malformed body
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "401":
+          description: Invalid email or password
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "500":
+          description: Internal server error
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      summary: User login
+      tags:
+      - Authentication
+  /api/auth/register:
+    post:
+      consumes:
+      - application/json
+      description: Registers a new user and automatically provisions an initial wallet
+        with 0 balance
+      parameters:
+      - description: Registration details
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/user.RegisterRequest'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            additionalProperties: true
+            type: object
+        "400":
+          description: Validation error
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "409":
+          description: User with email already exists
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "500":
+          description: Internal server error
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      summary: Register a new user
+      tags:
+      - Authentication
+  /api/transactions:
+    get:
+      description: Returns paginated audit transaction history for authenticated user
+      parameters:
+      - description: Page number (default 1)
+        in: query
+        name: page
+        type: integer
+      - description: Page size (default 20, max 100)
+        in: query
+        name: page_size
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties: true
+            type: object
+        "401":
+          description: Unauthorized
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "500":
+          description: Internal server error
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      security:
+      - BearerAuth: []
+      summary: List wallet transactions
+      tags:
+      - Transactions
+  /api/transactions/{id}:
+    get:
+      description: Returns details of a specific transaction belonging to user
+      parameters:
+      - description: Transaction UUID
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties: true
+            type: object
+        "400":
+          description: Invalid transaction ID
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "401":
+          description: Unauthorized
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "404":
+          description: Transaction not found
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "500":
+          description: Internal server error
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Get transaction details
+      tags:
+      - Transactions
+  /api/transactions/credit:
+    post:
+      consumes:
+      - application/json
+      description: Simulates a wallet deposit with audit transaction logging
+      parameters:
+      - description: Credit details
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/transaction.CreditDebitRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties: true
+            type: object
+        "400":
+          description: Invalid amount
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "401":
+          description: Unauthorized
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "500":
+          description: Internal server error
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Credit wallet balance
+      tags:
+      - Transactions
+  /api/transactions/debit:
+    post:
+      consumes:
+      - application/json
+      description: Withdraws funds from wallet with row-level locking to prevent overdrafts
+      parameters:
+      - description: Debit details
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/transaction.CreditDebitRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties: true
+            type: object
+        "400":
+          description: Invalid amount or insufficient funds
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "401":
+          description: Unauthorized
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "500":
+          description: Internal server error
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Debit wallet balance
+      tags:
+      - Transactions
+  /api/transfers:
+    post:
+      consumes:
+      - application/json
+      description: Transfers money atomically between sender and recipient with deadlock
+        prevention and idempotency
+      parameters:
+      - description: Optional idempotency key to prevent double charging on retries
+        in: header
+        name: Idempotency-Key
+        type: string
+      - description: Transfer details
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/transaction.TransferRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/transaction.TransferOutput'
+        "400":
+          description: Invalid amount, self-transfer or insufficient funds
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "401":
+          description: Unauthorized
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "404":
+          description: Recipient not found
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "409":
+          description: Idempotency key reused with different request payload
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "500":
+          description: Internal server error
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Transfer funds between users
+      tags:
+      - Transactions
+  /api/users/me:
+    get:
+      description: Returns the current authenticated user's profile
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties: true
+            type: object
+        "401":
+          description: Unauthorized
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "404":
+          description: User not found
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "500":
+          description: Internal server error
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Get authenticated user profile
+      tags:
+      - Authentication
+  /api/wallet:
+    get:
+      description: Returns the authenticated user's wallet with balance
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties: true
+            type: object
+        "401":
+          description: Unauthorized
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "404":
+          description: Wallet not found
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "500":
+          description: Internal server error
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Get user wallet details
+      tags:
+      - Wallet
+  /api/wallet/balance:
+    get:
+      description: Returns the authenticated user's wallet balance in kobo and formatted
+        NGN
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties: true
+            type: object
+        "401":
+          description: Unauthorized
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "404":
+          description: Wallet not found
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "500":
+          description: Internal server error
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Get user wallet balance
+      tags:
+      - Wallet
+  /health:
+    get:
+      description: Returns the health status and environment of the service
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      summary: Check service health
+      tags:
+      - System
+securityDefinitions:
+  BearerAuth:
+    description: Type "Bearer" followed by a space and JWT token.
+    in: header
+    name: Authorization
+    type: apiKey
+swagger: "2.0"

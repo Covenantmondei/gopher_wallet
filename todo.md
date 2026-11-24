@@ -146,33 +146,33 @@ Here's the initial API contract.
 
 | Method | Endpoint | Description |
 |--------|--------|--------|
-| POST | `/api/v1/auth/register` | Register user |
-| POST | `/api/v1/auth/login` | Login |
-| GET | `/api/v1/users/me` | Current user |
+| POST | `/api/auth/register` | Register user |
+| POST | `/api/auth/login` | Login |
+| GET | `/api/users/me` | Current user |
 
 ### Wallet
 
 | Method | Endpoint | Description |
 |--------|--------|--------|
-| GET | `/api/v1/wallet` | Get wallet |
-| GET | `/api/v1/wallet/balance` | Get balance |
+| GET | `/api/wallet` | Get wallet |
+| GET | `/api/wallet/balance` | Get balance |
 
 ### Transactions
 
 | Method | Endpoint | Description |
 |--------|--------|--------|
-| POST | `/api/v1/transactions/credit` | Credit wallet |
-| POST | `/api/v1/transactions/debit` | Debit wallet |
-| POST | `/api/v1/transfers` | Transfer funds |
-| GET | `/api/v1/transactions` | List transactions |
-| GET | `/api/v1/transactions/{id}` | Get transaction |
+| POST | `/api/transactions/credit` | Credit wallet |
+| POST | `/api/transactions/debit` | Debit wallet |
+| POST | `/api/transfers` | Transfer funds |
+| GET | `/api/transactions` | List transactions |
+| GET | `/api/transactions/{id}` | Get transaction |
 
 We'll use Go's standard `ServeMux` method-aware routing, for example\:
 
 ```
-mux.HandleFunc("POST /api/v1/auth/register", authHandler.Register)
-mux.HandleFunc("POST /api/v1/transfers", transferHandler.Create)
-mux.HandleFunc("GET /api/v1/wallet", walletHandler.Get)
+mux.HandleFunc("POST /api/auth/register", authHandler.Register)
+mux.HandleFunc("POST /api/transfers", transferHandler.Create)
+mux.HandleFunc("GET /api/wallet", walletHandler.Get)
 ```
 
 

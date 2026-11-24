@@ -48,7 +48,7 @@ func TestRegisterSuccessAndDuplicate(t *testing.T) {
 	body, _ := json.Marshal(payload)
 
 	// 1. Initial registration should succeed
-	req := httptest.NewRequest(http.MethodPost, "/api/v1/auth/register", bytes.NewReader(body))
+	req := httptest.NewRequest(http.MethodPost, "/api/auth/register", bytes.NewReader(body))
 	rr := httptest.NewRecorder()
 	handler.Register(rr, req)
 
@@ -88,7 +88,7 @@ func TestRegisterSuccessAndDuplicate(t *testing.T) {
 	}
 
 	// 2. Duplicate registration with same email should return 409 Conflict
-	dupReq := httptest.NewRequest(http.MethodPost, "/api/v1/auth/register", bytes.NewReader(body))
+	dupReq := httptest.NewRequest(http.MethodPost, "/api/auth/register", bytes.NewReader(body))
 	dupRR := httptest.NewRecorder()
 	handler.Register(dupRR, dupReq)
 
@@ -108,7 +108,7 @@ func TestRegisterInvalidPayload(t *testing.T) {
 	}
 	body, _ := json.Marshal(payload)
 
-	req := httptest.NewRequest(http.MethodPost, "/api/v1/auth/register", bytes.NewReader(body))
+	req := httptest.NewRequest(http.MethodPost, "/api/auth/register", bytes.NewReader(body))
 	rr := httptest.NewRecorder()
 	handler.Register(rr, req)
 

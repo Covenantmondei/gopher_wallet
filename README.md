@@ -95,7 +95,7 @@ sequenceDiagram
     participant Service as Transfer Service
     participant DB as PostgreSQL (Single Tx)
 
-    Client->>Service: POST /api/v1/transfers (Amount, Recipient, Idempotency-Key)
+    Client->>Service: POST /api/transfers (Amount, Recipient, Idempotency-Key)
     Service->>DB: Check Idempotency Key (Return cached response if HIT)
     Service->>DB: BEGIN TRANSACTION
     Service->>DB: Lock min(SenderID, RecipientID) FOR UPDATE
@@ -147,7 +147,21 @@ make test-race
 
 ---
 
-## 📡 API Reference
+## 📡 API Reference & Interactive Swagger Docs
+
+### Interactive Swagger UI
+Once the server is running, explore and test every API endpoint directly in your browser:
+```
+http://localhost:8080/swagger/index.html
+```
+*(Or simply `http://localhost:8080/swagger` which automatically redirects to the Swagger UI).*
+
+To re-generate docs after making changes to handler annotations:
+```bash
+make swagger
+```
+
+---
 
 ### Health Check
 ```bash
@@ -157,7 +171,7 @@ curl http://localhost:8080/health
 ### 1. Register User & Provision Wallet
 Every user registration automatically creates an initial wallet with `0` balance in the same database transaction.
 ```bash
-curl -X POST http://localhost:8080/api/v1/auth/register \
+curl -X POST http://localhost:8080/api/auth/register \
   -H "Content-Type: application/json" \
   -d '{
     "email": "ada@example.com",
@@ -168,7 +182,7 @@ curl -X POST http://localhost:8080/api/v1/auth/register \
 
 ### 2. Login
 ```bash
-curl -X POST http://localhost:8080/api/v1/auth/login \
+curl -X POST http://localhost:8080/api/auth/login \
   -H "Content-Type: application/json" \
   -d '{
     "email": "ada@example.com",
@@ -185,16 +199,16 @@ Response:
 
 ### 3. Get Wallet & Balance
 ```bash
-curl http://localhost:8080/api/v1/wallet \
+curl http://localhost:8080/api/wallet \
   -H "Authorization: Bearer <TOKEN>"
 
-curl http://localhost:8080/api/v1/wallet/balance \
+curl http://localhost:8080/api/wallet/balance \
   -H "Authorization: Bearer <TOKEN>"
 ```
 
 ### 4. Credit Wallet (Deposit Simulation)
 ```bash
-curl -X POST http://localhost:8080/api/v1/transactions/credit \
+curl -X POST http://localhost:8080/api/transactions/credit \
   -H "Authorization: Bearer <TOKEN>" \
   -H "Content-Type: application/json" \
   -d '{
@@ -206,7 +220,7 @@ curl -X POST http://localhost:8080/api/v1/transactions/credit \
 
 ### 5. Debit Wallet (Withdrawal)
 ```bash
-curl -X POST http://localhost:8080/api/v1/transactions/debit \
+curl -X POST http://localhost:8080/api/transactions/debit \
   -H "Authorization: Bearer <TOKEN>" \
   -H "Content-Type: application/json" \
   -d '{
@@ -217,7 +231,7 @@ curl -X POST http://localhost:8080/api/v1/transactions/debit \
 
 ### 6. Transfer Funds (P2P with Idempotency)
 ```bash
-curl -X POST http://localhost:8080/api/v1/transfers \
+curl -X POST http://localhost:8080/api/transfers \
   -H "Authorization: Bearer <TOKEN>" \
   -H "Idempotency-Key: e82cf551-7360-4927-b5b5-fd609460599a" \
   -H "Content-Type: application/json" \
@@ -230,6 +244,6 @@ curl -X POST http://localhost:8080/api/v1/transfers \
 
 ### 7. Transaction History
 ```bash
-curl "http://localhost:8080/api/v1/transactions?page=1&page_size=10" \
+curl "http://localhost:8080/api/transactions?page=1&page_size=10" \
   -H "Authorization: Bearer <TOKEN>"
 ```

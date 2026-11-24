@@ -29,7 +29,7 @@ func NewPool(ctx context.Context, dbURL string) (*pgxpool.Pool, error) {
 		return nil, fmt.Errorf("failed to create connection pool: %w", err)
 	}
 
-	pingCtx, cancel := context.WithTimeout(ctx, 5*time.Second)
+	pingCtx, cancel := context.WithTimeout(ctx, 15*time.Second)
 	defer cancel()
 
 	if err := pool.Ping(pingCtx); err != nil {

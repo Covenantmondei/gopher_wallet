@@ -17,16 +17,28 @@ func NewHandler(service *Service) *Handler {
 }
 
 type RegisterRequest struct {
-	Email    string `json:"email"`
-	Password string `json:"password"`
-	FullName string `json:"full_name"`
+	Email    string `json:"email" example:"user@example.com"`
+	Password string `json:"password" example:"secretPass123"`
+	FullName string `json:"full_name" example:"Ada Lovelace"`
 }
 
 type LoginRequest struct {
-	Email    string `json:"email"`
-	Password string `json:"password"`
+	Email    string `json:"email" example:"user@example.com"`
+	Password string `json:"password" example:"secretPass123"`
 }
 
+// Register godoc
+// @Summary Register a new user
+// @Description Registers a new user and automatically provisions an initial wallet with 0 balance
+// @Tags Authentication
+// @Accept json
+// @Produce json
+// @Param request body RegisterRequest true "Registration details"
+// @Success 201 {object} map[string]any
+// @Failure 400 {object} map[string]string "Validation error"
+// @Failure 409 {object} map[string]string "User with email already exists"
+// @Failure 500 {object} map[string]string "Internal server error"
+// @Router /api/auth/register [post]
 func (h *Handler) Register(w http.ResponseWriter, r *http.Request) {
 	var req RegisterRequest
 	if err := response.ReadJSON(w, r, &req); err != nil {
@@ -54,6 +66,18 @@ func (h *Handler) Register(w http.ResponseWriter, r *http.Request) {
 	})
 }
 
+// Login godoc
+// @Summary User login
+// @Description Authenticates a user and returns a signed JWT token
+// @Tags Authentication
+// @Accept json
+// @Produce json
+// @Param request body LoginRequest true "Login credentials"
+// @Success 200 {object} map[string]any
+// @Failure 400 {object} map[string]string "Malformed body"
+// @Failure 401 {object} map[string]string "Invalid email or password"
+// @Failure 500 {object} map[string]string "Internal server error"
+// @Router /api/auth/login [post]
 func (h *Handler) Login(w http.ResponseWriter, r *http.Request) {
 	var req LoginRequest
 	if err := response.ReadJSON(w, r, &req); err != nil {
@@ -79,6 +103,17 @@ func (h *Handler) Login(w http.ResponseWriter, r *http.Request) {
 	})
 }
 
+// GetProfile godoc
+// @Summary Get authenticated user profile
+// @Description Returns the current authenticated user's profile
+// @Tags Authentication
+// @Produce json
+// @Security BearerAuth
+// @Success 200 {object} map[string]any
+// @Failure 401 {object} map[string]string "Unauthorized"
+// @Failure 404 {object} map[string]string "User not found"
+// @Failure 500 {object} map[string]string "Internal server error"
+// @Router /api/users/me [get]
 func (h *Handler) GetProfile(w http.ResponseWriter, r *http.Request) {
 	userID, err := middleware.GetUserIDFromContext(r.Context())
 	if err != nil {

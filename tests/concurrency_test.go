@@ -27,7 +27,7 @@ func TestConcurrentTransfers(t *testing.T) {
 		"amount":      1000000,
 		"description": "Funding for concurrency test",
 	})
-	creditReq := httptest.NewRequest(http.MethodPost, "/api/v1/transactions/credit", bytes.NewReader(creditPayload))
+	creditReq := httptest.NewRequest(http.MethodPost, "/api/transactions/credit", bytes.NewReader(creditPayload))
 	creditReq.Header.Set("Authorization", "Bearer "+senderToken)
 	creditRR := httptest.NewRecorder()
 	rig.mux.ServeHTTP(creditRR, creditReq)
@@ -57,7 +57,7 @@ func TestConcurrentTransfers(t *testing.T) {
 				"description":     fmt.Sprintf("Concurrent transfer #%d", routineID),
 			})
 
-			req := httptest.NewRequest(http.MethodPost, "/api/v1/transfers", bytes.NewReader(payload))
+			req := httptest.NewRequest(http.MethodPost, "/api/transfers", bytes.NewReader(payload))
 			req.Header.Set("Authorization", "Bearer "+senderToken)
 			rr := httptest.NewRecorder()
 
@@ -84,7 +84,7 @@ func TestConcurrentTransfers(t *testing.T) {
 
 	// Verify final balances
 	// Sender balance should be exactly 0
-	balReqSender := httptest.NewRequest(http.MethodGet, "/api/v1/wallet/balance", nil)
+	balReqSender := httptest.NewRequest(http.MethodGet, "/api/wallet/balance", nil)
 	balReqSender.Header.Set("Authorization", "Bearer "+senderToken)
 	balRRSender := httptest.NewRecorder()
 	rig.mux.ServeHTTP(balRRSender, balReqSender)
@@ -98,7 +98,7 @@ func TestConcurrentTransfers(t *testing.T) {
 	}
 
 	// Receiver balance should be exactly 1,000,000 kobo (₦10,000)
-	balReqReceiver := httptest.NewRequest(http.MethodGet, "/api/v1/wallet/balance", nil)
+	balReqReceiver := httptest.NewRequest(http.MethodGet, "/api/wallet/balance", nil)
 	balReqReceiver.Header.Set("Authorization", "Bearer "+receiverToken)
 	balRRReceiver := httptest.NewRecorder()
 	rig.mux.ServeHTTP(balRRReceiver, balReqReceiver)
